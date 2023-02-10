@@ -1,23 +1,32 @@
 import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { setCategoryId } from '../redux/slices/filterSlice';
+import { setCategoryId, setCurrentPage } from '../redux/slices/filterSlice';
 import Categories from '../components/Categories';
 import Sort from '../components/Sort';
 import Skeleton from '../components/ShoesBlock/Skeleton';
 import ShoesBlock from '../components/ShoesBlock';
 import Pagination from '../components/Pagination';
 import { SearchContext } from '../App';
+import axios from 'axios';
 
 const Home = () => {
-  const categoryId = useSelector((state) => state.filter.categoryId);
-  const sortType = useSelector((state) => state.filter.sort.sortProperty);
+  const { categoryId, sort, currentPage } = useSelector(
+    (state) => state.filter
+  );
+
+  const sortType = sort.sortProperty;
+
   const dispatch = useDispatch();
 
   const { searchValue } = React.useContext(SearchContext);
   const [items, setItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
   const [orderType, setOrderType] = useState('asc');
+
+  const onChangePage = (number) => {
+    dispatch(setCurrentPage(number));
+  };
+
   const onChangeCategory = (id) => {
     dispatch(setCategoryId(id));
   };
@@ -28,16 +37,16 @@ const Home = () => {
 
   useEffect(() => {
     setIsLoading(true);
-    fetch(
-      `https://63bd875018bc301c026bdb66.mockapi.io/items?page=${currentPage}&limit=4&${category}&sortBy=${sortType}&order=${orderType}${search}`
-    )
+
+    axios
+      .get(
+        `https://63bd875018bc301c026bdb66.mockapi.io/items?page=${currentPage}&limit=4&${category}&sortBy=${sortType}&order=${orderType}${search}`
+      )
       .then((res) => {
-        return res.json();
-      })
-      .then((arr) => {
-        setItems(arr);
+        setItems(res.data);
         setIsLoading(false);
       });
+
     window.scrollTo(0, 0);
   }, [categoryId, sortType, orderType, currentPage, search, category]);
 
@@ -61,7 +70,7 @@ const Home = () => {
       </div>
       <h2 className="content__title">All shoes</h2>
       <div className="content__items">{isLoading ? skeleton : sneakers}</div>
-      <Pagination onChangePage={(number) => setCurrentPage(number)} />
+      <Pagination currentPage={currentPage} onChangePage={onChangePage} />
     </div>
   );
 };
